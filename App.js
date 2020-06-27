@@ -1,19 +1,40 @@
-import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import React,{useState,useEffect} from 'react';
+import * as Font from 'expo-font';
+import { AppLoading } from 'expo';
+import Navigator from './routes/drawer'
+import {decode, encode} from 'base-64'
+
+if (!global.btoa) { global.btoa = encode }
+if (!global.atob) { global.atob = decode }
+
+
+
+const getFonts =()=> Font.loadAsync({
+    'roboto-bold':require('./assets/fonts/Roboto-Bold.ttf'),
+    'roboto-medium':require('./assets/fonts/Roboto-Medium.ttf'),
+});
+
+
 
 export default function App() {
-  return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app!</Text>
-    </View>
-  );
+  const [fontsLoaded,setFontsLoaded] = useState(false);
+  
+
+  if(fontsLoaded){
+    return (
+      
+      <Navigator />
+      
+      
+    );
+
+  } else { 
+    return(
+      <AppLoading
+      startAsync={getFonts}
+      onFinish={()=>setFontsLoaded(true)}
+      />
+    )
+  }
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});
