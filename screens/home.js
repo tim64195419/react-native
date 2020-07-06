@@ -26,21 +26,51 @@ export default function Home({navigation}) {
   const [refreshing, setRefreshing] = React.useState(false);
   const [eventStatus,setEventStatus] = useState(true)
 
-  
-  
   useEffect(()=>{
     
     get_db_firestore_data()
+    dataChange()
     console.log('home refresh')
     
     
     return ()=>{
+      get_db_firestore_data
+      dataChange
       console.log('useEffect unmount')
       // Location.geocodeAsync().abort()
     }
     
     
   },[])
+
+  const dataChange = async ()=>{
+    await Fire.db_firestore.collection('Events')
+      .onSnapshot((snapshot)=>{
+        const changes = [];
+        let changeType = ''
+
+        snapshot.docChanges().forEach(function(change){
+          if (change.type === "added") {
+            changeType = change.type
+          }
+          if (change.type === "modified") {
+            changeType = change.type 
+          }
+          if (change.type === "removed") { 
+            changeType = change.type
+          }
+        })
+        // if(changeType == 'added'){
+        //   setEventStatus(false)
+        // }
+        if(changeType !== 'added'){
+          // console.log('here')
+          onRefresh()
+      
+          
+        }
+      })
+  }
 
   //refresh
   const onRefresh = React.useCallback(() => {
@@ -84,16 +114,26 @@ export default function Home({navigation}) {
 
     console.log(addrJson)
 
-    Location.geocodeAsync(addrJson).then(async (resp)=>{
+    Location.geocodeAsync(addrJson).then((resp)=>{
       let latitude=resp[0].latitude
       let longitude=resp[0].longitude
-      await setGeo(geo=>{
-        geo.coords.latitude = latitude
-        geo.coords.longitude = longitude
-      })
       
-      set()
+      setGeo(data => (
+        data.coords.latitude = latitude,
+        data.coords.longitude = longitude
+      ))
       
+      console.log('here',typeof(geo.coords))
+      if(typeof(geo.coords) === 'object'){
+        set()
+
+      }else{
+        console.log('no found address pls retry..')
+      }
+      
+      
+    }).catch((error) => {
+      console.log('Geo Error: ', error)
     })
     
     const set = ()=>{
@@ -108,12 +148,16 @@ export default function Home({navigation}) {
         setModalOpen(false);
       }else{
         console.log('create fail')
-      } 
+      }
+      //重置geo
+      setGeo({coords:{latitude:null,longitude:null}})
+
 
     }
 
     
   }
+
     return (
       
       <View style={globalStyles.container}>

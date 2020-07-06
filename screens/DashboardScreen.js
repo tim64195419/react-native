@@ -295,7 +295,7 @@ class DashboardScreen extends React.Component {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text>We need your permission!</Text>
-        <Button title="Sign out" onPress={() => firebase.auth().signOut()} />
+        {/* <Button title="Sign out" onPress={() => firebase.auth().signOut()} /> */}
       </View>
     )
     

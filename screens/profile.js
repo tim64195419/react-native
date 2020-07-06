@@ -12,6 +12,7 @@ export default function profile(){
     useEffect(()=>{
     
         get_db_firestore_data()
+        dataChange()
         console.log('profile refresh')
         return ()=>{
           console.log('useEffect unmount')
@@ -21,7 +22,32 @@ export default function profile(){
         
       },[])
 
+    
+    const dataChange = async ()=>{
+    await Fire.db_firestore.collection('Events')
+        .onSnapshot((snapshot)=>{
+        const changes = [];
+        let changeType = ''
 
+        snapshot.docChanges().forEach(function(change){
+            if (change.type === "added") {
+            changeType = change.type
+            }
+            if (change.type === "modified") {
+            changeType = change.type 
+            }
+            if (change.type === "removed") { 
+            changeType = change.type
+            }
+        })
+        if(changeType){
+            // console.log('here')
+            get_db_firestore_data()
+        
+            
+        }
+        })
+    }
     const get_db_firestore_data = ()=>{
         Fire.db_firestore.collection('Events').where('createUserId','==',Fire.uid).get().then(function(querySnapshot){
           const items = querySnapshot.docs.map(doc=>{

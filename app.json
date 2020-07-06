@@ -22,13 +22,7 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true,
-  
-      "bundleIdentifier":"com.yourcompany.Mahjong",
-      "config": {
-        "googleMapsApiKey":"AIzaSyDgkU5775LUQXl8NDdIJzXNEyun95sA_rY"
-      }
-
+      "supportsTablet": true
     }
   }
 }
