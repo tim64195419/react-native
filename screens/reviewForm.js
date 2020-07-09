@@ -29,7 +29,7 @@ const reviewSchema = yup.object({
 
 
 
-export default function ReviewForm({addReview,get_db_firestore_data}){
+export default function ReviewForm({addReview}){
     
     const [image,setImage] = useState('https://firebasestorage.googleapis.com/v0/b/mahjong-f43af.appspot.com/o/icon%2Fpicture.png?alt=media&token=621f2b1d-db9c-4999-8176-183a59c34a24')
     const [status,setStatus] = useState(true)
@@ -97,9 +97,7 @@ export default function ReviewForm({addReview,get_db_firestore_data}){
                         addReview(values);
                         setImage('https://firebasestorage.googleapis.com/v0/b/mahjong-f43af.appspot.com/o/icon%2Fpicture.png?alt=media&token=621f2b1d-db9c-4999-8176-183a59c34a24')
                         
-                        setTimeout(()=>{
-                            get_db_firestore_data()
-                        },500)
+                        
                     }}
                     onPress={Keyboard.dismiss}
                 >

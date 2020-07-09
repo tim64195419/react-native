@@ -1,61 +1,33 @@
-import React, { useState,useEffect } from 'react'
+import React, { useState,useEffect,useContext } from 'react'
 import { Dimensions,Text, Alert,Image,TouchableOpacity, View ,Button,FlatList} from 'react-native'
 import firebase from 'firebase';
 import Fire from '../Fire'; 
 import Card from '../shared/card'
+import {DataContext} from '../App';
 
 const { width, height } = Dimensions.get('screen')
 
 export default function profile(){
     const [reviews, setReviews] = useState([]);
-
+    const dataContext = useContext(DataContext)
     useEffect(()=>{
-    
-        get_db_firestore_data()
-        dataChange()
+        proInfo()
         console.log('profile refresh')
         return ()=>{
-          console.log('useEffect unmount')
-         
+            proInfo
+            console.log('useEffect unmount')
         }
         
         
-      },[])
+      },[dataContext])
 
-    
-    const dataChange = async ()=>{
-    await Fire.db_firestore.collection('Events')
-        .onSnapshot((snapshot)=>{
-        const changes = [];
-        let changeType = ''
-
-        snapshot.docChanges().forEach(function(change){
-            if (change.type === "added") {
-            changeType = change.type
-            }
-            if (change.type === "modified") {
-            changeType = change.type 
-            }
-            if (change.type === "removed") { 
-            changeType = change.type
-            }
-        })
-        if(changeType){
-            // console.log('here')
-            get_db_firestore_data()
+    const proInfo = ()=>{
         
-            
-        }
-        })
-    }
-    const get_db_firestore_data = ()=>{
-        Fire.db_firestore.collection('Events').where('createUserId','==',Fire.uid).get().then(function(querySnapshot){
-          const items = querySnapshot.docs.map(doc=>{
-              return doc.data()
-           })
-          setReviews(items)
-          
-    
+        dataContext.data.map((data)=>{
+            if(data.createUserId == Fire.uid){
+                // console.log('profile data',data)
+                setReviews([data])   
+            }
         })
     }
 
@@ -63,7 +35,7 @@ export default function profile(){
     const del_Event = ()=>{
         Fire.db_firestore.collection('Events').doc(Fire.user).delete().then(()=>{
             console.log(Fire.user,' del Event')
-            get_db_firestore_data()
+            setReviews([])
         })
 
     }
@@ -141,6 +113,8 @@ export default function profile(){
                 )}
             />
             <Button  title="Sign out" onPress={() => firebase.auth().signOut()} />
+            {/* <Button title='add_event' onPress={()=>dataContext.dataDispatch({data:dataContext.data,type:'add_event'})} />
+            <Button title='del_event' onPress={()=>dataContext.dataDispatch({type:'del_event'})} /> */}
 
 
         </View>

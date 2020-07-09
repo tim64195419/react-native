@@ -1,61 +1,86 @@
-import React,{useState} from 'react';
-import { View, Text, StyleSheet, Button,Dimensions,Image,TouchableOpacity } from 'react-native';
+import React,{useState,useContext,useEffect} from 'react';
+import { View, Text, StyleSheet, Dimensions,Image,TouchableOpacity } from 'react-native';
 import MapView from 'react-native-maps';
-import {Ionicons} from '@expo/vector-icons';
 import * as Permissions from 'expo-permissions'
-import * as Location from 'expo-location';
-import firebase from 'firebase';
+
 import Polyline from '@mapbox/polyline'
 import { Marker } from 'react-native-maps'
 import Fire from '../Fire'
-
-
-
-
-
-
-const locations = []
+import {DataContext} from '../App';
 
 const { width, height } = Dimensions.get('screen')
 
+export default function DashboardScreen({navigation}) {
+// class DashboardScreen extends React.Component {
+  // constructor(props){
+  //   super(props)
+  //   this.state = {
+  //     latitude: null,
+  //     longitude: null,
+  //     locations: locations,
+  //     update:true,
+  //     EventName:locations
+  //   }
+    
+    
+  // }
+  const dataContext = useContext(DataContext)
+  const [coords,setCoords] = useState({latitude:null,longitude:null})
+  const [desCoords,setDesCoords] = useState({desLatitude:null,desLongitude:null})
+  const [locations,setLocations] = useState(dataContext.data)
+  const [eventName,setEventName] = useState()
+  const [destination,setDestination] = useState()
+  const [directionInfo,setDirectionInfo] = useState({coords:null,distance:'',time:'',startlocation:null})
+  
 
-
-class DashboardScreen extends React.Component {
-  constructor(props){
-    super(props)
-    this.state = {
-      latitude: null,
-      longitude: null,
-      locations: locations,
-      update:true,
-      EventName:locations
+  useEffect(()=>{  
+    authPermissionsLocation()
+    dataRender()
+    dataChange()
+    getDirections()
+    console.log('Dashboard refresh')
+    return ()=>{
+      authPermissionsLocation
+      dataRender
+      dataChange
+      getDirections
+      console.log('useEffect unmount')
     }
+  },[dataContext,setLocations,setDirectionInfo])
+
+  const dataRender = ()=>{   
+  
+    setLocations(dataContext.data)
     
     
   }
-  
-  get_db_firestore_data(){
-    if(this.state.update){
-      Fire.db_firestore.collection('Events').get().then(function(querySnapshot){
-        let items = querySnapshot.docs.map(doc=>{
-            return doc.data()
+
+  const dataChange = async ()=>{
+    await Fire.db_firestore.collection('Events')
+      .onSnapshot((snapshot)=>{
+        let changeType = ''
+
+        snapshot.docChanges().forEach(function(change){
+          if (change.type === "added") {
+            changeType = change.type
+          }
+          if (change.type === "modified") {
+            changeType = change.type 
+          }
+          if (change.type === "removed") { 
+            changeType = change.type
+          }
         })
-        return Promise.all(items)
-      }).then((items)=>{
-        this.setting(items)
+        if(changeType !== 'added'){
+          dataRender()
+      
+          
+        }
       })
-    }
   }
-  setting(data){
-    this.setState({locations:data,update:false})
-    // console.log('asdasdasasd',this.state)
-  }
+
   
-  
-  async componentDidMount() {
-    await this.get_db_firestore_data()
-    
-    
+  const authPermissionsLocation = async ()=>{
     const { status } = await Permissions.getAsync(Permissions.LOCATION)
     
     if (status !== 'granted') {
@@ -63,80 +88,28 @@ class DashboardScreen extends React.Component {
     }
 
     navigator.geolocation.getCurrentPosition(
-      ({ coords: { latitude, longitude } }) => this.setState({ latitude, longitude }, this.mergeCoords),
+      ({ coords: { latitude, longitude } }) => setCoords({ latitude, longitude }),
       (error) => console.log('Error:', error)
     )
-    // const { locations: [ sampleLocation ] } = this.state
-    // const desLatitude = this.state.locations[0].coords.latitude
-    // const desLongitude =  this.state.locations[0].coords.longitude
+    setDesCoords({desLatitude:coords.latitude,desLongitude:coords.longitude})
+    mergeCoords()
+    // await renderMarkers()
 
-    this.setState({
-      desLatitude: 25,
-      desLongitude: 121,
-      // desLatitude,
-      // desLongitude
-    }, this.mergeCoords)
-    // console.log('1111',this.state.locations[0].coords)
-    
-    await this.renderMarkers()
-  }
-
-  async componentDidUpdate(){
-    let {
-      locations
-    } = this.state
-    await Fire.db_firestore.collection('Events')
-      // .where('userId', '==', firebase.auth().currentUser.uid)
-      // .orderBy('timestamp', 'desc')
-      .onSnapshot((snapshot)=>{
-        
-        const changes = [];
-        let changeType = ''
-        snapshot.docChanges().forEach(function(change){
-          if (change.type === "added") {
-            // console.log("added Event: ");
-            changes.push(change.doc.data()) 
-            changeType = change.type
-          }
-          if (change.type === "modified") {
-            changes.push(change.doc.data())
-            changeType = change.type 
-          }
-          if (change.type === "removed") { 
-            changes.push(change.doc.data())
-            changeType = change.type
-          }
-        })
-        if(changeType=='added'){
-          this.state.locations = changes
-          // console.log('qweqew',this.state.locations)
-          // console.log('123123')
-      
-          
-        }
-      })
-      
-  }
-
-  mergeCoords = () => {
-    const {
-      latitude,
-      longitude,
-      desLatitude,
-      desLongitude
-    } = this.state
-
-    const hasStartAndEnd = latitude !== null && desLatitude !== null
-
-    if (hasStartAndEnd) {
-      const concatStart = `${latitude},${longitude}`
-      const concatEnd = `${desLatitude},${desLongitude}`
-      this.getDirections(concatStart, concatEnd)
-      // console.log(concatStart,concatEnd)
-    }
   }
   
-  async getDirections(startLoc, desLoc) {
+
+  const mergeCoords = ()=>{
+    const hasStartAndEnd = coords.latitude !==null && desCoords.desLatitude !== null
+    if(hasStartAndEnd){
+      const concatStart = `${coords.latitude},${coords.longitude}`
+      const concatEnd = `${desCoords.desLatitude},${desCoords.desLongitude}`
+      getDirections(concatStart, concatEnd)
+
+    }
+
+  }
+
+  const getDirections = async (startLoc,desLoc)=>{
     try {
       const resp = await fetch(`https://maps.googleapis.com/maps/api/directions/json?origin=${startLoc}&destination=${desLoc}&key=AIzaSyDgkU5775LUQXl8NDdIJzXNEyun95sA_rY`)
       const respJson = await resp.json();
@@ -154,154 +127,133 @@ class DashboardScreen extends React.Component {
           longitude: point[1]
         }
       })
-      this.setState({ coords,distance,time ,startlocation})
-    } catch(error) {
+      setDirectionInfo({coords,distance,time,startlocation})
+    }catch(error) {
       console.log('Error: ', error)
     }
+
   }
 
-  onMarkerPress = (location,EventName) => () => {
-    const { coords: { latitude, longitude } } = location
-    this.setState({
-      destination: location,
-      desLatitude: latitude,
-      desLongitude: longitude,
-      EventName:EventName
-    }, this.mergeCoords)
-    console.log("EventName",EventName.address)
-    Fire.setEventName(EventName.address)
-   
-    // Fire.createEvent(locations)
-    
+  const onMarkerPress = (location,EventName)=>{
+    setDestination(location)
+    setDesCoords({desLatitude:location.coords.latitude,desLongitude:location.coords.longitude})
+    setEventName(EventName)
+    mergeCoords()
+    console.log("EventName!",EventName)
+    Fire.setEventName(EventName)
   }
 
-  renderMarkers = () => {
-    const { locations } = this.state
-    // console.log('hi~~~',locations)
+  
+  const renderMarkers = ()=>{
     return (
       <View>
-        {
-          locations.map((location, idx) => {
-            const {
-              coords: { latitude, longitude }
-            } = location
-            const EventName = location
+        { 
+          locations.map((location,idx) => {
+            {/* console.log('mapping',location) */}
+            const EventName = location.address
+            const coords = location.coords
+            console.log('EventName!!!',EventName)
+            
             return (
               <Marker
                 key={idx}
-                coordinate={{ latitude, longitude }}
-                onPress={this.onMarkerPress(location,EventName)}
+                coordinate={coords}
+                onPress={()=>onMarkerPress(location,EventName)}
+                
               />
             )
           })
         }
       </View>
     )
-  }
-
-  ChatRoom = () => {
-    this.props.navigation.navigate('InfoDetail')
 
   }
 
-  render() {  
-    const {
-      time,
-      coords,
-      distance,
-      latitude,
-      longitude,
-      destination,
-      EventName,
-      
-      
-    } = this.state
-
-    if(latitude){
-      return (
+  
+  
+  if(coords.latitude!==null){
+    const latitude = coords.latitude
+    const longitude = coords.longitude
+    return (
+      <MapView
+          provider='google'
+          showsUserLocation
+          style={{ flex: 1 }}
+          initialRegion={{
+            latitude:latitude,
+            longitude:longitude,
+            latitudeDelta: 0.0922,
+            longitudeDelta: 0.0421
+          }}
+      >
         
-        <MapView
-            provider='google'
-            showsUserLocation
-            style={{ flex: 1 }}
-            initialRegion={{
-              latitude,
-              longitude,
-              latitudeDelta: 0.0922,
-              longitudeDelta: 0.0421
+        <View
+          style={{
+            width,
+            paddingTop: 10,
+            backgroundColor: 'white',
+
+          }}
+          >
+          <TouchableOpacity onPress={()=> {
+            if(eventName.length>=1){
+              navigation.navigate('ReviewDetails',eventName)
+              Fire.setEventName(eventName)
+
+            }
+            
+            
             }}
-        >
-          
-          <View
             style={{
-              width,
-              paddingTop: 10,
-              // alignSelf: 'center',
-              // alignItems: 'center',
-              // height: height * 0.15,
-              backgroundColor: 'white',
-              // justifyContent: 'flex-end',
-              
-              
+              flexDirection:'col',
+              alignSelf: 'center',
+              alignItems: 'center',
+
             }}
             >
-            <TouchableOpacity onPress={()=> {
-              this.props.navigation.navigate('ReviewDetails',EventName)
-              Fire.setEventName(EventName.address)
-              
-              }}
-              style={{
-                flexDirection:'col',
-                alignSelf: 'center',
-                alignItems: 'center',
-
-              }}
-              >
-              <Text style={{ fontWeight: 'bold' }}>EventName: {EventName.address}</Text>
-              <Text style={{ fontWeight: 'bold' }}>Time: {time}</Text>
-              <Text style={{ fontWeight: 'bold' }}>Distance: {distance}</Text>
-              
-            </TouchableOpacity>
+            <Text style={{ fontWeight: 'bold' }}>EventName: {eventName}</Text>
+            <Text style={{ fontWeight: 'bold' }}>Time: {directionInfo.time}</Text>
+            <Text style={{ fontWeight: 'bold' }}>Distance: {directionInfo.distance}</Text>
             
-          </View>
+          </TouchableOpacity>
           
-          {this.state.locations && this.renderMarkers()}
-          <MapView.Polyline
-            strokeWidth={2}
-            strokeColor="blue"
-            coordinates={coords}
-          />
-          
-          <Image
-            source={{uri:destination && destination.image_url}}
-            style={{
-              flex: 1,
-              width: width * 0.95,
-              height: height * 0.30,
-              alignSelf: 'center',
-              position: 'absolute',
-              bottom: height * 0.05
-            }}
-            // onPress={() => {this.props.navigation.navigate('InfoDetail',{EventName:EventName})}}
-          />
-
-        </MapView>
+        </View>
         
-          // <Button title="Sign out" onPress={() => firebase.auth().signOut()} />
-          // <Text>DashboardScreen</Text>
-      );
+        {locations && renderMarkers()}
+        <MapView.Polyline
+          strokeWidth={2}
+          strokeColor="blue"
+          coordinates={directionInfo.coords}
+        />
+        
+        <Image
+          source={{uri:destination && destination.image_url}}
+          style={{
+            flex: 1,
+            width: width * 0.95,
+            height: height * 0.30,
+            alignSelf: 'center',
+            position: 'absolute',
+            bottom: height * 0.05
+          }}
+          
+        />
+      </MapView>
+    )
 
-    }
+  }else{
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <Text>We need your permission!</Text>
-        {/* <Button title="Sign out" onPress={() => firebase.auth().signOut()} /> */}
       </View>
     )
-    
+
   }
+    
+    
+  
 }
-export default DashboardScreen;
+
 
 const styles = StyleSheet.create({
   container: {

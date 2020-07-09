@@ -11,9 +11,11 @@ import LoginScreen from '../screens/LoginScreen';
 import DashboardScreen from '../screens/DashboardScreen';
 import ChatRoom from '../screens/ChatRoom';
 import InfoDetail from '../screens/InfoDetail';
+import AdScreen from '../screens/AdScreen';
 
 
 const RootDrawerNavigator = createDrawerNavigator({
+    
     Home:{
         screen:HomeStack,
     },
@@ -32,6 +34,7 @@ const AppSwitchNavigator = createSwitchNavigator({
     RootDrawerNavigator:RootDrawerNavigator,
     ChatRoom:ChatRoom,
     InfoDetail:InfoDetail,
+    AdScreen:AdScreen,
     
   
   });

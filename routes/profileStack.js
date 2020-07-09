@@ -15,10 +15,10 @@ const screens = {
         
 }
 
-const AboutStack = createStackNavigator(screens,{
+const ProfileStack = createStackNavigator(screens,{
     defaultNavigationOptions:{
         headerStyle:{ backgroundColor:'#fda' }
     }
 });
 
-export default AboutStack;
+export default ProfileStack;

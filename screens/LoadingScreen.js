@@ -18,7 +18,7 @@ export default class LoadingScreen extends Component {
             console.log('AUTH STATE CHANGED CALLED ')
             if(user){
                 console.log('Dashboard')
-                this.props.navigation.navigate('RootDrawerNavigator');
+                this.props.navigation.navigate('AdScreen');
                 
                 
             } else {

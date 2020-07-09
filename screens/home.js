@@ -1,5 +1,5 @@
-import React,{useState,Component, useEffect} from 'react';
-import { AsyncStorage,Dimensions,StyleSheet, Text, View ,Image,FlatList,TouchableOpacity,Modal,TouchableWithoutFeedback,Keyboard,RefreshControl} from 'react-native';
+import React,{useState,useContext, useEffect} from 'react';
+import { Dimensions,StyleSheet, Text, View ,Image,FlatList,TouchableOpacity,Modal,TouchableWithoutFeedback,Keyboard,RefreshControl} from 'react-native';
 import {globalStyles} from '../styles/global';
 import Card from '../shared/card'
 import {MaterialIcons} from '@expo/vector-icons';
@@ -8,7 +8,7 @@ import Fire from '../Fire'
 import firebase from 'firebase'
 import 'firebase/firestore'
 import * as Location from 'expo-location';
-
+import {DataContext} from '../App';
 
 const { width, height } = Dimensions.get('screen')
 
@@ -25,28 +25,39 @@ export default function Home({navigation}) {
   const [geo,setGeo] = useState({coords:{latitude:null,longitude:null}})
   const [refreshing, setRefreshing] = React.useState(false);
   const [eventStatus,setEventStatus] = useState(true)
+  const dataContext = useContext(DataContext)
 
   useEffect(()=>{
     
-    get_db_firestore_data()
+    dataRender()
     dataChange()
     console.log('home refresh')
     
     
     return ()=>{
-      get_db_firestore_data
+      dataRender
       dataChange
       console.log('useEffect unmount')
       // Location.geocodeAsync().abort()
     }
     
     
-  },[])
+  },[dataContext,setReviews])
+
+  const dataRender = ()=>{
+    setEventStatus(true)
+    const Data = dataContext.data.map((data)=>{
+      if(data.createUserId == Fire.uid){
+        setEventStatus(false)
+      }
+      return data 
+    })
+    setReviews(Data)
+  }
 
   const dataChange = async ()=>{
     await Fire.db_firestore.collection('Events')
       .onSnapshot((snapshot)=>{
-        const changes = [];
         let changeType = ''
 
         snapshot.docChanges().forEach(function(change){
@@ -60,11 +71,7 @@ export default function Home({navigation}) {
             changeType = change.type
           }
         })
-        // if(changeType == 'added'){
-        //   setEventStatus(false)
-        // }
         if(changeType !== 'added'){
-          // console.log('here')
           onRefresh()
       
           
@@ -75,29 +82,13 @@ export default function Home({navigation}) {
   //refresh
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
-
     wait(2000).then(() => setRefreshing(false));
     console.log('refresh...')
-    get_db_firestore_data()
+    dataRender()
   }, [refreshing]);
 
   
-  
-// loading firebase data
-  const get_db_firestore_data = ()=>{
-    setEventStatus(true)
-    Fire.db_firestore.collection('Events').orderBy("createTime", "desc").get().then(function(querySnapshot){
-      const items = querySnapshot.docs.map(doc=>{
-          if(doc.data().createUserId == Fire.uid){
-            setEventStatus(false)
-          }
-          return doc.data()
-       })
-      setReviews(items)
 
-    })
-    
-  }
 
   const addReview = (review) => {
     review.key = Math.random().toString();
@@ -108,9 +99,6 @@ export default function Home({navigation}) {
     review.status = true;
     review.checkAuth = true;
     const addrJson = review.address.toString()
-
-    // let latitude = null
-    // let longitude = null
 
     console.log(addrJson)
 
@@ -170,7 +158,7 @@ export default function Home({navigation}) {
                 onPress={()=> setModalOpen(false)}
                 style={{ ...styles.modalToggle, ...styles.modalClose}}
               />
-              <ReviewForm addReview={addReview} get_db_firestore_data={get_db_firestore_data}/>
+              <ReviewForm addReview={addReview} />
             </View>
           </TouchableWithoutFeedback>
         </Modal>
