@@ -11,19 +11,7 @@ import {DataContext} from '../App';
 const { width, height } = Dimensions.get('screen')
 
 export default function DashboardScreen({navigation}) {
-// class DashboardScreen extends React.Component {
-  // constructor(props){
-  //   super(props)
-  //   this.state = {
-  //     latitude: null,
-  //     longitude: null,
-  //     locations: locations,
-  //     update:true,
-  //     EventName:locations
-  //   }
-    
-    
-  // }
+
   const dataContext = useContext(DataContext)
   const [coords,setCoords] = useState({latitude:null,longitude:null})
   const [desCoords,setDesCoords] = useState({desLatitude:null,desLongitude:null})
@@ -127,6 +115,8 @@ export default function DashboardScreen({navigation}) {
           longitude: point[1]
         }
       })
+
+      console.log('distance~~~',time,distance)
       setDirectionInfo({coords,distance,time,startlocation})
     }catch(error) {
       console.log('Error: ', error)
@@ -136,7 +126,9 @@ export default function DashboardScreen({navigation}) {
 
   const onMarkerPress = (location,EventName)=>{
     setDestination(location)
+    console.log('desCoords!!!',location.coords.latitude,location.coords.longitude)
     setDesCoords({desLatitude:location.coords.latitude,desLongitude:location.coords.longitude})
+    console.log('desCoords',desCoords)
     setEventName(EventName)
     mergeCoords()
     console.log("EventName!",EventName)
@@ -152,7 +144,7 @@ export default function DashboardScreen({navigation}) {
             {/* console.log('mapping',location) */}
             const EventName = location.address
             const coords = location.coords
-            console.log('EventName!!!',EventName)
+            {/* console.log('EventName!!!',EventName) */}
             
             return (
               <Marker
