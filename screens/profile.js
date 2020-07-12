@@ -19,7 +19,7 @@ export default function profile(){
         }
         
         
-      },[dataContext])
+      },[dataContext,setReviews])
 
     const proInfo = ()=>{
         

@@ -16,7 +16,7 @@ export default function DashboardScreen({navigation}) {
   const [coords,setCoords] = useState({latitude:null,longitude:null})
   const [desCoords,setDesCoords] = useState({desLatitude:null,desLongitude:null})
   const [locations,setLocations] = useState(dataContext.data)
-  const [eventName,setEventName] = useState()
+  const [eventName,setEventName] = useState([])
   const [destination,setDestination] = useState()
   const [directionInfo,setDirectionInfo] = useState({coords:null,distance:'',time:'',startlocation:null})
   
@@ -34,7 +34,7 @@ export default function DashboardScreen({navigation}) {
       getDirections
       console.log('useEffect unmount')
     }
-  },[dataContext,setLocations,setDirectionInfo])
+  },[dataContext,setLocations,setDirectionInfo,setEventName])
 
   const dataRender = ()=>{   
   
@@ -126,13 +126,14 @@ export default function DashboardScreen({navigation}) {
 
   const onMarkerPress = (location,EventName)=>{
     setDestination(location)
+    // 沒有更新到 setDescoords 請處理！！
     console.log('desCoords!!!',location.coords.latitude,location.coords.longitude)
     setDesCoords({desLatitude:location.coords.latitude,desLongitude:location.coords.longitude})
     console.log('desCoords',desCoords)
     setEventName(EventName)
     mergeCoords()
-    console.log("EventName!",EventName)
-    Fire.setEventName(EventName)
+    console.log("EventName!",EventName.address)
+    Fire.setEventName(EventName.address)
   }
 
   
@@ -142,7 +143,7 @@ export default function DashboardScreen({navigation}) {
         { 
           locations.map((location,idx) => {
             {/* console.log('mapping',location) */}
-            const EventName = location.address
+            const EventName = location
             const coords = location.coords
             {/* console.log('EventName!!!',EventName) */}
             
@@ -188,11 +189,10 @@ export default function DashboardScreen({navigation}) {
           }}
           >
           <TouchableOpacity onPress={()=> {
-            if(eventName.length>=1){
-              navigation.navigate('ReviewDetails',eventName)
-              Fire.setEventName(eventName)
+            navigation.navigate('ReviewDetails',eventName)
+            Fire.setEventName(eventName.address)
 
-            }
+          
             
             
             }}
@@ -203,7 +203,7 @@ export default function DashboardScreen({navigation}) {
 
             }}
             >
-            <Text style={{ fontWeight: 'bold' }}>EventName: {eventName}</Text>
+            <Text style={{ fontWeight: 'bold' }}>EventName: {eventName.address}</Text>
             <Text style={{ fontWeight: 'bold' }}>Time: {directionInfo.time}</Text>
             <Text style={{ fontWeight: 'bold' }}>Distance: {directionInfo.distance}</Text>
             
